@@ -4,9 +4,9 @@ import * as React from 'react';
 import { AppProvider } from '@toolpad/core/AppProvider';
 import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import DashboardIcon from '@mui/icons-material/Dashboard';
-import GridViewRoundedIcon from '@mui/icons-material/GridViewRounded';
 import BookmarkRoundedIcon from '@mui/icons-material/BookmarkRounded';
 import SettingsRoundedIcon from '@mui/icons-material/SettingsRounded';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -15,32 +15,42 @@ import LogoutIcon from '@mui/icons-material/Logout';
 const NAVIGATION = [
   { kind: 'header', title: 'MENU' },
   { segment: '', title: 'Dashboard', icon: <DashboardIcon /> },
-  { segment: 'categories', title: 'Categories', icon: <GridViewRoundedIcon /> },
-  { segment: 'library', title: 'Library', icon: <BookmarkRoundedIcon /> },
+  { segment: 'lending', title: 'Empréstimos', icon: <AssignmentIcon /> },
+  { segment: 'library', title: 'Acervo', icon: <BookmarkRoundedIcon /> },
   { kind: 'divider' },
   { kind: 'header', title: '' },
   {
     segment: 'settings',
-    title: 'Settings',
+    title: 'Configurações',
     icon: <SettingsRoundedIcon />,
     children: [
-      { segment: 'profile', title: 'Profile', icon: <AccountCircleIcon /> },
-      { segment: 'users', title: 'Users', icon: <ManageAccountsIcon /> },
+      { segment: 'profile', title: 'Perfil', icon: <AccountCircleIcon /> },
+      { segment: 'users', title: 'Usuários', icon: <ManageAccountsIcon /> },
     ],
   },
-  { segment: 'logout', title: 'Logout', icon: <LogoutIcon /> },
+  { segment: 'logout', title: 'Sair', icon: <LogoutIcon /> },
 ];
 
 function App() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const router = React.useMemo(() => ({
-    pathname: location.pathname,
-    searchParams: new URLSearchParams(location.search),
-    navigate: (path) => navigate(path),
-  }), [location, navigate]);
-
+  const router = React.useMemo(() => {
+    return {
+      pathname: location.pathname,
+      searchParams: new URLSearchParams(location.search),
+      navigate: (path) => {
+        if (path === "/settings") {
+          return {
+            pathname: location.pathname,
+            searchParams: new URLSearchParams(location.search),
+          };
+        }
+        navigate(path);
+      },
+    };
+  }, [location, navigate]);
+  
   return (
     <AppProvider
       navigation={NAVIGATION}

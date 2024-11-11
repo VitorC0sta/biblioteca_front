@@ -1,8 +1,8 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom";
 import App from "../App";
 import { Layout } from "../pages/layout";
-import { Dashboard, Home } from "../pages/dashboard";
-import { Categories } from "../pages/categories";
+import { Dashboard } from "../pages/dashboard";
+import { Lending } from "../pages/lending";
 import { Library } from "../pages/library";
 import { Profile } from "../pages/profile";
 import { Users } from "../pages/users";
@@ -23,8 +23,8 @@ const router = createBrowserRouter([
             element: <Dashboard />,
           },
           {
-            path: 'categories',
-            element: <Categories />,
+            path: 'lending',
+            element: <Lending />,
           },
           {
             path: 'library',
