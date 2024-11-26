@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom"
-import { EnhancedTable } from "../../modules/components/table"
+import { EnhancedTable } from "../../modules/components/library/table"
 import { Book } from "../../modules/components/book"
 
 export const Library = () => {

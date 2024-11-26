@@ -16,11 +16,11 @@ import Paper from '@mui/material/Paper';
 import Checkbox from '@mui/material/Checkbox';
 import IconButton from '@mui/material/IconButton';
 import Tooltip from '@mui/material/Tooltip';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Switch from '@mui/material/Switch';
+
 import DeleteIcon from '@mui/icons-material/Delete';
 import FilterListIcon from '@mui/icons-material/FilterList';
 import { visuallyHidden } from '@mui/utils';
+import { StatusCell } from '../../status-cell/index'
 
 
 const createData = (id, title, author, year, status) => {
@@ -34,16 +34,16 @@ const createData = (id, title, author, year, status) => {
 }
 
 const rows = [
-  createData(1, 'O Senhor dos Anéis', 'J.R.R. Tolkien', 1954, 'Disponível'),
-  createData(2, '1984', 'George Orwell', 1949, 'Emprestado'),
-  createData(3, 'Dom Quixote', 'Miguel de Cervantes', 1605, 'Disponível'),
-  createData(4, 'A Origem das Espécies', 'Charles Darwin', 1859, 'Disponível'),
-  createData(5, 'Moby Dick', 'Herman Melville', 1851, 'Emprestado'),
-  createData(6, 'O Pequeno Príncipe', 'Antoine de Saint-Exupéry', 1943, 'Disponível'),
-  createData(7, 'A Metamorfose', 'Franz Kafka', 1915, 'Disponível'),
-  createData(8, 'Crime e Castigo', 'Fiódor Dostoiévski', 1866, 'Emprestado'),
-  createData(9, 'Ulisses', 'James Joyce', 1922, 'Disponível'),
-  createData(10, 'Guerra e Paz', 'Liev Tolstói', 1869, 'Disponível'),
+  createData(1, 'O Senhor dos Anéis', 'J.R.R. Tolkien', 1954, 'disponivel'),
+  createData(2, '1984', 'George Orwell', 1949, 'emprestado'),
+  createData(3, 'Dom Quixote', 'Miguel de Cervantes', 1605, 'disponivel'),
+  createData(4, 'A Origem das Espécies', 'Charles Darwin', 1859, 'disponivel'),
+  createData(5, 'Moby Dick', 'Herman Melville', 1851, 'emprestado'),
+  createData(6, 'O Pequeno Príncipe', 'Antoine de Saint-Exupéry', 1943, 'disponivel'),
+  createData(7, 'A Metamorfose', 'Franz Kafka', 1915, 'disponivel'),
+  createData(8, 'Crime e Castigo', 'Fiódor Dostoiévski', 1866, 'emprestado'),
+  createData(9, 'Ulisses', 'James Joyce', 1922, 'disponivel'),
+  createData(10, 'Guerra e Paz', 'Liev Tolstói', 1869, 'perdido'),
 ];
 
 function descendingComparator(a, b, orderBy) {
@@ -113,7 +113,7 @@ const EnhancedTableHead = (props) => {
         {headCells.map((headCell) => (
           <TableCell
             key={headCell.id}
-            align={headCell.numeric ? 'right' : 'left'}
+            align='left'
             padding={headCell.disablePadding ? 'none' : 'normal'}
             sortDirection={orderBy === headCell.id ? order : false}
           >
@@ -145,7 +145,7 @@ EnhancedTableHead.propTypes = {
   rowCount: PropTypes.number.isRequired,
 };
 
-function EnhancedTableToolbar(props) {
+const EnhancedTableToolbar = (props) => {
   const { numSelected } = props;
   return (
     <Toolbar
@@ -268,7 +268,7 @@ export const EnhancedTable = () => {
 
   return (
     <Box sx={{ width: '100%' }}>
-      <Paper sx={{ width: '100%', mb: 2 }}>
+      <Paper elevation={3} sx={{ width: '100%', mb: 2, borderRadius: 2 }}>
         <EnhancedTableToolbar numSelected={selected.length} />
         <TableContainer>
           <Table
@@ -312,8 +312,10 @@ export const EnhancedTable = () => {
                       {row.title}
                     </TableCell>
                     <TableCell align="left">{row.author}</TableCell>
-                    <TableCell align="right">{row.year}</TableCell>
-                    <TableCell align="left">{row.status}</TableCell>
+                    <TableCell align="left">{row.year}</TableCell>
+                    <TableCell align="left">
+                      <StatusCell status={row.status}/>
+                    </TableCell>
                   </TableRow>
                 );
               })}
