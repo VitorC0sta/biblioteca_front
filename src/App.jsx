@@ -11,7 +11,6 @@ import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import LogoutIcon from '@mui/icons-material/Logout';
 
-
 const NAVIGATION = [
   { kind: 'header', title: 'MENU' },
   { segment: '', title: 'Dashboard', icon: <DashboardIcon /> },
@@ -46,11 +45,28 @@ function App() {
             searchParams: new URLSearchParams(location.search),
           };
         }
+
+        if(path === "/logout") {
+          handleLogout()
+
+          return {
+            pathname: location.pathname,
+            searchParams: new URLSearchParams(location.search),
+          }
+        }
         navigate(path);
       },
     };
   }, [location, navigate]);
-  
+
+  // Função de logout
+  const handleLogout = () => {
+    console.log('Realizando logout...');
+    localStorage.removeItem('user');
+    localStorage.removeItem('authToken');
+    navigate('/login');
+  };
+
   return (
     <AppProvider
       navigation={NAVIGATION}

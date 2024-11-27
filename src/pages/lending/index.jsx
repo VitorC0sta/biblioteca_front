@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom"
-import { LendingControl } from "../../modules/components/lending/lending-control"
-import { OverdueBooksList } from "../../modules/components/lending/lending-overdue"
+import { LendingTable } from "../../modules/lending/lending-control"
+import { OverdueBooksList } from "../../modules/lending/lending-overdue"
 
 export const Lending = () => {
   return (
@@ -15,7 +15,7 @@ export const Lending = () => {
         <p>Controle de Empréstimos – Acompanhe os livros emprestados, registre novas transações e monitore devoluções.</p>
       </header>
       <div>
-        <LendingControl />
+        <LendingTable />
       </div>
       <div>
         <OverdueBooksList />

@@ -8,6 +8,9 @@ const StatusBadge = styled(Box)(({ status }) => {
     case 'disponivel':
       backgroundColor = '#2ecc71';
       break;
+      case 'devolvido':
+        backgroundColor = '#2ecc71';
+        break;
     case 'emprestado':
       backgroundColor = '#3498db';
       break;

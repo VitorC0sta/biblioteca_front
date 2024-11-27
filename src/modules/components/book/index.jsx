@@ -1,60 +1,30 @@
-import { Box, Typography } from '@mui/material';
+import { Box, Typography } from "@mui/material";
+import BookComponent from "./book-image";
 
-export const Book = ({ imageUrl, title, subtitle }) => {
-  const hasImage = imageUrl && imageUrl.startsWith('http');
-
+export const Book = ({ title, subtitle }) => {
   return (
     <Box
       sx={{
         height: '20rem',
         width: '12rem',
         borderRadius: '8px',
-        overflow: 'hidden', 
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'flex-start',
-        backgroundColor: !hasImage ? '#f0f0f0' : undefined, 
         position: 'relative',
         transition: 'all 0.3s ease',
         '&:hover': {
-          '& .image': {
-            opacity: 0.3, 
-          },
           '& .overlay': {
             opacity: 1,
           },
         },
       }}
     >
+      {/* Exibe a capa estilizada do livro */}
+      <BookComponent/>
 
-      {hasImage ? (
-        <img
-          src={imageUrl}
-          alt="Book Cover"
-          className="image"
-          style={{
-            objectFit: 'cover', 
-            width: '100%', 
-            height: '100%',
-            transition: 'all 0.3s ease', 
-          }}
-        />
-      ) : (
-        <Box
-          sx={{
-            height: '100%', 
-            width: '100%', 
-            backgroundColor: '#e0e0e0',
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
-        >
-          <Typography variant="h6" color="textSecondary">Sem imagem</Typography>
-        </Box>
-      )}
-
- 
+      {/* Overlay com título e subtítulo */}
       <Box
         className="overlay"
         sx={{
