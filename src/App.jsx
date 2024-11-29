@@ -10,6 +10,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import ManageAccountsIcon from '@mui/icons-material/ManageAccounts';
 import LogoutIcon from '@mui/icons-material/Logout';
+import { useAuth } from './contexts/authorization';
 
 const NAVIGATION = [
   { kind: 'header', title: 'MENU' },
@@ -31,6 +32,7 @@ const NAVIGATION = [
 ];
 
 function App() {
+  const {logout, isAuthenticated} = useAuth()
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -47,25 +49,18 @@ function App() {
         }
 
         if(path === "/logout") {
-          handleLogout()
-
+          logout()
+          navigate("/login")
+          
           return {
             pathname: location.pathname,
             searchParams: new URLSearchParams(location.search),
-          }
+          };
         }
         navigate(path);
       },
     };
   }, [location, navigate]);
-
-  // Função de logout
-  const handleLogout = () => {
-    console.log('Realizando logout...');
-    localStorage.removeItem('user');
-    localStorage.removeItem('authToken');
-    navigate('/login');
-  };
 
   return (
     <AppProvider

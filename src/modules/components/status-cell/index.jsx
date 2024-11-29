@@ -8,10 +8,13 @@ const StatusBadge = styled(Box)(({ status }) => {
     case 'disponivel':
       backgroundColor = '#2ecc71';
       break;
-      case 'devolvido':
-        backgroundColor = '#2ecc71';
-        break;
+    case 'finalizado':
+      backgroundColor = '#2ecc71';
+      break;
     case 'emprestado':
+      backgroundColor = '#3498db';
+      break;
+    case 'ativo':
       backgroundColor = '#3498db';
       break;
     case 'perdido':
@@ -39,7 +42,7 @@ const StatusBadge = styled(Box)(({ status }) => {
 
 export const StatusCell = ({ status }) => (
   <StatusBadge status={status}>
-    {status.charAt(0).toUpperCase() + status.slice(1)}
+    {status?.charAt(0).toUpperCase() + status?.slice(1)}
   </StatusBadge>
 );
 

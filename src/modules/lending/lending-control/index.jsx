@@ -14,36 +14,12 @@ import Toolbar from '@mui/material/Toolbar';
 import Typography from '@mui/material/Typography';
 import Paper from '@mui/material/Paper';
 import IconButton from '@mui/material/IconButton';
-import { Button, Modal, TextField, Grid, Select, MenuItem, InputLabel, FormControl } from '@mui/material';
+import { Button, Modal, TextField, Grid, Select, MenuItem, InputLabel, FormControl, FormControlLabel, Checkbox } from '@mui/material';
 import EditIcon from '@mui/icons-material/Edit';
 import { StatusCell } from '../../components/status-cell/index';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { del, get, post, put } from '../../../api';
 
-// Dados de empréstimos
-const createData = (id, title, borrower, isProfessor, status, loanCount) => {
-  return {
-    id,
-    title,
-    borrower,
-    isProfessor,
-    status,
-    loanCount,
-  };
-};
-
-const rows = [
-  createData(1, 'O Senhor dos Anéis', 'João Silva', true, 'emprestado', 5),
-  createData(2, '1984', 'Maria Oliveira', false, 'devolvido', 2),
-  createData(3, 'Dom Quixote', 'Carlos Pereira', true, 'emprestado', 3),
-  createData(4, 'A Origem das Espécies', 'Ana Costa', false, 'devolvido', 1),
-  createData(5, 'Moby Dick', 'Pedro Souza', false, 'emprestado', 7),
-  createData(6, 'O Pequeno Príncipe', 'Lucas Silva', true, 'devolvido', 4),
-  createData(7, 'A Metamorfose', 'Renata Costa', false, 'perdido', 2),
-  createData(8, 'Crime e Castigo', 'Carlos Pereira', true, 'emprestado', 1),
-  createData(9, 'Ulisses', 'Maria Oliveira', false, 'devolvido', 8),
-  createData(10, 'Guerra e Paz', 'Ana Costa', true, 'perdido', 6),
-];
-
-// Função para comparar os dados
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
     return -1;
@@ -54,7 +30,6 @@ function descendingComparator(a, b, orderBy) {
   return 0;
 }
 
-// Função para obter o comparador
 const getComparator = (order, orderBy) => {
   return order === 'desc'
     ? (a, b) => descendingComparator(a, b, orderBy)
@@ -62,18 +37,17 @@ const getComparator = (order, orderBy) => {
 };
 
 const stableSort = (array, comparator) => {
-  const stabilizedThis = array.map((el, index) => [el, index]); // Mapeando cada item com seu índice
-  stabilizedThis.sort((a, b) => {
-    const order = comparator(a[0], b[0]); // Compara os valores
+  const stabilizedThis = array?.map((el, index) => [el, index]);
+  stabilizedThis?.sort((a, b) => {
+    const order = comparator(a[0], b[0]);
     if (order !== 0) {
       return order;
     }
-    return a[1] - b[1]; // Se os valores forem iguais, preserva a ordem original
+    return a[1] - b[1];
   });
-  return stabilizedThis.map((el) => el[0]); // Retorna apenas os elementos sem os índices
+  return stabilizedThis?.map((el) => el[0]);
 };
 
-// Cabeçalhos da tabela
 const headCells = [
   {
     id: 'id',
@@ -103,7 +77,7 @@ const headCells = [
     id: 'loanCount',
     numeric: true,
     disablePadding: false,
-    label: 'Número de Empréstimos',
+    label: 'Nº de Empréstimos',
   },
   {
     id: 'status',
@@ -119,7 +93,6 @@ const headCells = [
   }
 ];
 
-// Componente para cabeçalho da tabela
 const EnhancedTableHead = (props) => {
   const { order, orderBy, onRequestSort } = props;
   const createSortHandler = (property) => (event) => {
@@ -150,7 +123,6 @@ const EnhancedTableHead = (props) => {
   );
 };
 
-// Componente da toolbar
 const EnhancedTableToolbar = ({ onOpenLoanModal }) => (
   <Toolbar>
     <Typography variant="h6" component="div" margin="-0.5rem" sx={{ flex: 1 }}>
@@ -165,32 +137,186 @@ const EnhancedTableToolbar = ({ onOpenLoanModal }) => (
   </Toolbar>
 );
 
-// Componente principal da tabela
 export const LendingTable = () => {
   const [order, setOrder] = React.useState('asc');
   const [orderBy, setOrderBy] = React.useState('loanCount');
   const [page, setPage] = React.useState(0);
   const [dense, setDense] = React.useState(false);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [openLoanModal, setOpenLoanModal] = React.useState(false);
+  const [selectedUser, setSelectedUser] = React.useState(null);
+  const [selectedBook, setSelectedBook] = React.useState(null);
+  const [isProfessor, setIsProfessor] = React.useState(false);
+  const [isReservation, setIsReservation] = React.useState(false);  
   const [open, setOpen] = React.useState(false);
-  const [selectedItem, setSelectedItem] = React.useState(null); // Item para edição no modal
+  const [selectedItem, setSelectedItem] = React.useState(null);
   const [newStatus, setNewStatus] = React.useState('');
-  const [isProfessor, setIsProfessor] = React.useState('');
+  const [emprestimosData, setEmprestimosData] = React.useState([]);
+  const [userLendingCount, setUserLendingCount] = React.useState({});
+  const [disponibleBooks, setDisponibleBooks] = React.useState([]);
+  const [users, setUsers] = React.useState([]);
+  const [lending, setLending] = React.useState([]);
+  const [openUpdateModal, setOpenUpdateModal] = React.useState(false);
+  const [statusEmprestimo, setStatusEmprestimo] = React.useState('ativo');
+  const [dataDevolucao, setDataDevolucao] = React.useState('');
 
-  const handleClose = () => {
-    setOpen(false);
+  const [livros, setLivros] = React.useState([]);
+  
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [livrosResponse, usuariosResponse, emprestimosResponse] = await Promise.all([
+          get('/livros'),
+          get('/usuarios'),
+          get('/emprestimos')
+        ]);
+        
+        setLivros(livrosResponse.filter((livro) => livro.statusLivro === 'disponivel'));
+        setUsers(usuariosResponse);
+        setEmprestimosData(emprestimosResponse);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  const handleOpenUpdateModal = (row) => {
+    setSelectedItem(row.id);
+    setSelectedUser(row.usuarioId);
+    setSelectedBook(row.livroId);
+    setStatusEmprestimo(row.statusEmprestimo);
+    setDataDevolucao(row.dataDevolucao);
+    setOpenUpdateModal(true);
+  };
+
+  const handleCloseUpdateModal = () => {
+    setOpenUpdateModal(false);
     setSelectedItem(null);
+    setSelectedUser(null);
+    setSelectedBook(null);
+    setStatusEmprestimo('ativo');
+    setDataDevolucao('');
   };
 
-  const handleRequestSort = (event, property) => {
-    const isAsc = orderBy === property && order === 'asc';
-    setOrder(isAsc ? 'desc' : 'asc');
-    setOrderBy(property);
+  React.useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const [livrosResponse, usuariosResponse, emprestimosResponse] = await Promise.all([
+          get('/livros'),
+          get('/usuarios'),
+          get('/emprestimos')
+        ]);
+        
+        setDisponibleBooks(livrosResponse.filter((book) => book.statusLivro === 'disponivel'));
+        setUsers(usuariosResponse);
+        setLending(emprestimosResponse);
+        generateEmprestimos(emprestimosResponse);
+        countLending(emprestimosResponse);
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
+  
+    fetchData();
+  }, []);
+
+  const generateEmprestimos = (emprestimos) => { 
+    const emprestimosFormatted = emprestimos?.map(emprestimo => {
+      return {
+        id: emprestimo.idEmprestimo,
+        idUsuario: emprestimo.usuarioId.idUsuario,
+        idLivro: emprestimo.livroId.idLivro,
+        nome: emprestimo.usuarioId.nomeUsuario,
+        isProfessor: emprestimo.usuarioId.tipoUsuario === "professor",
+        title: emprestimo.livroId.tituloLivro,
+        status: emprestimo.statusEmprestimo,
+        statusLivro: emprestimo.livroId.statusLivro
+      }
+    })
+    setEmprestimosData(emprestimosFormatted);
+  }
+  
+  const countLending = (emprestimos) => {
+    const userLendingCount = {};
+
+    emprestimos.forEach((emprestimo) => {
+      const usuarioId = emprestimo.usuarioId.idUsuario;
+
+      if (!userLendingCount[usuarioId]) {
+        userLendingCount[usuarioId] = {
+          nome: emprestimo.usuarioId.nomeUsuario,
+          count: 1
+        };
+      } else {
+        userLendingCount[usuarioId].count += 1;
+      }
+    });
+    setUserLendingCount(userLendingCount);
   };
 
-  const handleClickEdit = (row) => {
-    setSelectedItem(row); // Preenche o item selecionado no modal
-    setOpen(true); // Abre o modal
+  const handleOpenLoanModal = () => {
+    setOpenLoanModal(true);
+  };
+  
+  const handleCloseLoanModal = () => {
+    setOpenLoanModal(false);
+    setSelectedUser(null);
+    setSelectedBook(null);
+    setIsProfessor(false);
+    setIsReservation(false);
+  };
+  
+  const handleUserChange = (e) => {
+    const user = users?.find((user) => user.idUsuario === e.target.value);
+    if (user) {
+      setSelectedUser(user);
+      setIsProfessor(user.isProfessor);
+    }
+  };
+  
+  const handleBookChange = (e) => {
+    const book = disponibleBooks?.find(
+      (book) => book.idLivro === e.target.value
+    );
+    if (book) {
+      setSelectedBook(book);
+    } else {
+      setSelectedBook(null);
+    }
+  };
+
+  const handleGenerateLoan = async () => {
+    const payload = {
+      usuarioId: {
+        idUsuario: selectedUser.idUsuario
+      },
+      livroId: {
+        idLivro: selectedBook.idLivro
+      }
+    };
+    
+    try {
+      const result = await post('/emprestimos', payload);
+      console.log('Empréstimo gerado com sucesso:', result);
+      generateEmprestimos(lending);
+      handleCloseLoanModal();
+    } catch (error) {
+      console.error('Erro ao gerar empréstimo:', error);
+    }
+  };
+
+  const handleDeleteEmprestimo = async () => {
+    try {
+      await del(`/emprestimos/${selectedItem}`);
+      setEmprestimosData(emprestimosData.filter((item) => item.id !== selectedItem));
+    } catch (error) {
+      console.error('Erro ao deletar empréstimo:', error);
+    }
+    
+    setOpen(false);
+    
   };
 
   const handleChangePage = (event, newPage) => {
@@ -202,25 +328,33 @@ export const LendingTable = () => {
     setPage(0);
   };
 
-  const handleOpenLoanModal = () => {
-    setOpen(true);
+  const handleRequestSort = (event, property) => {
+    const isAsc = orderBy === property && order === 'asc';
+    setOrder(isAsc ? 'desc' : 'asc');
+    setOrderBy(property);
   };
 
-  const handleStatusChange = (e) => {
-    setNewStatus(e.target.value);
+  const handleUpdateLoan = async () => {
+    const payload = {
+      usuarioId: { idUsuario: selectedUser.idUsuario },
+      livroId: { idLivro: selectedBook.idLivro },
+      statusEmprestimo: statusEmprestimo,
+      dataDevolucao: dataDevolucao
+    };
+
+    try {
+      const result = await put(`/emprestimos/${selectedItem}`, payload);
+      console.log('Empréstimo atualizado com sucesso:', result);
+      setEmprestimosData((prevState) => 
+        prevState.map((item) =>
+          item.id === selectedItem ? { ...item, statusEmprestimo, dataDevolucao } : item
+        )
+      );
+      handleCloseUpdateModal();
+    } catch (error) {
+      console.error('Erro ao atualizar empréstimo:', error);
+    }
   };
-
-  const handleProfessorChange = (e) => {
-    setIsProfessor(e.target.value)
-  }
-
-  const handleGenerateLoan = () => {
-    // Lógica para gerar empréstimo no banco de dados
-    console.log("Empréstimo gerado");
-    handleClose();
-  };
-
-  const emptyRows = rowsPerPage - Math.min(rowsPerPage, rows.length - page * rowsPerPage);
 
   return (
     <Box sx={{ width: '100%' }}>
@@ -231,46 +365,42 @@ export const LendingTable = () => {
             <EnhancedTableHead
               order={order}
               orderBy={orderBy}
-              onRequestSort={handleRequestSort} 
+              onRequestSort={handleRequestSort}
             />
             <TableBody>
-              {stableSort(rows, getComparator(order, orderBy))
+              {emprestimosData?.length > 0 && stableSort(emprestimosData, getComparator(order, orderBy))
                 .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
                 .map((row) => (
-                  <TableRow key={row.id}>
-                    <TableCell component="th" scope="row" padding="normal">
-                      {row.id}
+                  <TableRow hover key={row.id}>
+                    <TableCell>{row.id}</TableCell>
+                    <TableCell>{row.title}</TableCell>
+                    <TableCell>{row.nome}</TableCell>
+                    <TableCell>{row.isProfessor ? 'Sim' : 'Não'}</TableCell>
+                    <TableCell>{userLendingCount[row.idUsuario]?.count || 0}</TableCell>
+                    <TableCell>
+                      <StatusCell status={row.status} statusLivro={row.statusLivro} />
                     </TableCell>
-                    <TableCell component="th" scope="row" padding="none">
-                      {row.title}
-                    </TableCell>
-                    <TableCell align="left">{row.borrower}</TableCell>
-                    <TableCell align="left">{row.isProfessor ? 'Sim' : 'Não'}</TableCell>
-                    <TableCell align="left">{row.loanCount}</TableCell>
-                    <TableCell align="left"><StatusCell status={row.status} /></TableCell>
-                    <TableCell align="left">
-                      <Button
-                        onClick={() => handleClickEdit(row)} 
-                        variant="text"
-                        color="primary"
-                        startIcon={<EditIcon />}
+                    <TableCell>
+                      <IconButton
+                        edge="end"
+                        onClick={() => { setSelectedItem(row.id); setOpen(true); }}
+                        aria-label="delete"
                       >
-                      </Button>
+                        <DeleteIcon />
+                      </IconButton>
+                        <IconButton onClick={() => handleOpenUpdateModal(row)}>
+                      <EditIcon />
+                    </IconButton>
                     </TableCell>
                   </TableRow>
                 ))}
-              {emptyRows > 0 && (
-                <TableRow style={{ height: 53 * emptyRows }}>
-                  <TableCell colSpan={7} />
-                </TableRow>
-              )}
             </TableBody>
           </Table>
         </TableContainer>
         <TablePagination
           rowsPerPageOptions={[5, 10, 25]}
           component="div"
-          count={rows.length}
+          count={emprestimosData?.length || 0}
           rowsPerPage={rowsPerPage}
           page={page}
           onPageChange={handleChangePage}
@@ -278,75 +408,167 @@ export const LendingTable = () => {
         />
       </Paper>
 
-      {/* Modal de Edição */}
-      <Modal open={open} onClose={handleClose}>
+      {/* Modal de Empréstimo */}
+      <Modal
+        open={openLoanModal}
+        onClose={handleCloseLoanModal}
+        aria-labelledby="modal-loan-title"
+      >
         <Box sx={modalStyle}>
-          {selectedItem && (
-            <>
-              <Typography variant="h6">Editar Empréstimo</Typography>
-              <div className="wrapper">
-                <TextField
-                  label="ID"
-                  disabled
-                  fullWidth
-                  defaultValue={selectedItem.id}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  label="Título do Livro"
-                  fullWidth
-                  defaultValue={selectedItem.title}
-                  sx={{ mb: 2 }}
-                />
-                <TextField
-                  label="Empréstimo por"
-                  fullWidth
-                  defaultValue={selectedItem.borrower}
-                  sx={{ mb: 2 }}
-                />
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>Professor</InputLabel>
-                  <Select
-                    value={isProfessor !== '' ? isProfessor : selectedItem.isProfessor}
-                    onChange={handleProfessorChange}
-                    label="Professor"
-                  >
-                    <MenuItem value={true}>Sim</MenuItem>
-                    <MenuItem value={false}>Não</MenuItem>
-                  </Select>
-                </FormControl>
-                <TextField
-                  label="Número de Empréstimos"
-                  fullWidth
-                  type="number"
-                  defaultValue={selectedItem.loanCount}
-                  sx={{ mb: 2 }}
-                />
-                <FormControl fullWidth sx={{ mb: 2 }}>
-                  <InputLabel>Status</InputLabel>
-                  <Select
-                    value={newStatus || selectedItem.status}
-                    onChange={handleStatusChange}
-                    label="Status"
-                  >
-                    <MenuItem value="emprestado">Emprestado</MenuItem>
-                    <MenuItem value="perdido">Perdido</MenuItem>
-                  </Select>
-                </FormControl>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <Button variant="contained" onClick={handleGenerateLoan}>Salvar</Button>
-                  <Button variant="outlined" onClick={handleClose}>Fechar</Button>
-                </div>
-              </div>
-            </>
-          )}
+          <Typography id="modal-loan-title" variant="h6" component="h2">
+            Gerar Empréstimo
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel id="select-user-label">Selecione o Usuário</InputLabel>
+                <Select
+                  labelId="select-user-label"
+                  value={selectedUser ? selectedUser.idUsuario : ''}
+                  onChange={handleUserChange}
+                  label="Selecione o Usuário"
+                >
+                  {users?.map((user) => (
+                    <MenuItem key={user.idUsuario} value={user.idUsuario}>
+                      {user.nomeUsuario}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel id="select-book-label">Selecione o Livro</InputLabel>
+                <Select
+                  labelId="select-book-label"
+                  value={selectedBook ? selectedBook.idLivro : ''}
+                  onChange={handleBookChange}
+                  label="Selecione o Livro"
+                >
+                  {disponibleBooks?.map((book) => (
+                    <MenuItem key={book.idLivro} value={book.idLivro}>
+                      {book.tituloLivro}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControlLabel
+                control={<Checkbox checked={isProfessor} onChange={(e) => setIsProfessor(e.target.checked)} />}
+                label="É Professor"
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <Button onClick={handleGenerateLoan} variant="contained" fullWidth>
+                Gerar Empréstimo
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
+      </Modal>
+
+      {/* Modal de Confirmação de Exclusão */}
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        aria-labelledby="modal-delete-loan-title"
+      >
+        <Box sx={modalStyle}>
+          <Typography id="modal-delete-loan-title" variant="h6" component="h2">
+            Confirmar Exclusão
+          </Typography>
+          <Typography>Tem certeza que deseja deletar esse empréstimo?</Typography>
+          <Grid container spacing={2} sx={{ marginTop: 2 }}>
+            <Grid item xs={6}>
+              <Button onClick={() => setOpen(false)} fullWidth>
+                Cancelar
+              </Button>
+            </Grid>
+            <Grid item xs={6}>
+              <Button onClick={handleDeleteEmprestimo} variant="contained" color="error" fullWidth>
+                Excluir
+              </Button>
+            </Grid>
+          </Grid>
+        </Box>
+      </Modal>
+
+      {/* Modal de Atualização */}
+      <Modal open={openUpdateModal} onClose={handleCloseUpdateModal} aria-labelledby="modal-update-loan">
+        <Box sx={modalStyle}>
+          <Typography id="modal-update-loan" variant="h6" component="h2">
+            Atualizar Empréstimo
+          </Typography>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel id="select-user-label">Selecione o Usuário</InputLabel>
+                <Select
+                  labelId="select-user-label"
+                  value={selectedUser ? selectedUser.idUsuario : ''}
+                  onChange={(e) => setSelectedUser(users.find(user => user.idUsuario === e.target.value))}
+                  label="Selecione o Usuário"
+                >
+                  {users.map((user) => (
+                    <MenuItem key={user.idUsuario} value={user.idUsuario}>
+                      {user.nomeUsuario}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <InputLabel id="select-book-label">Selecione o Livro</InputLabel>
+                <Select
+                  labelId="select-book-label"
+                  value={selectedBook ? selectedBook.idLivro : ''}
+                  onChange={(e) => setSelectedBook(livros.find(book => book.idLivro === e.target.value))}
+                  label="Selecione o Livro"
+                >
+                  {livros.map((book) => (
+                    <MenuItem key={book.idLivro} value={book.idLivro}>
+                      {book.tituloLivro}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <TextField
+                label="Data de Devolução"
+                type="date"
+                value={dataDevolucao}
+                onChange={(e) => setDataDevolucao(e.target.value)}
+                fullWidth
+                InputLabelProps={{ shrink: true }}
+              />
+            </Grid>
+            <Grid item xs={12}>
+              <FormControl fullWidth>
+                <Select
+                  label="Status do Empréstimo"
+                  value={statusEmprestimo}
+                  onChange={(e) => setStatusEmprestimo(e.target.value)}
+                >
+                  <MenuItem value="ativo">Ativo</MenuItem>
+                  <MenuItem value="finalizado">Finalizado</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12}>
+              <Button onClick={handleUpdateLoan} variant="contained" fullWidth>
+                Atualizar Empréstimo
+              </Button>
+            </Grid>
+          </Grid>
         </Box>
       </Modal>
     </Box>
   );
 };
 
-// Estilos para o modal
 const modalStyle = {
   display: 'flex',
   flexDirection: 'column',

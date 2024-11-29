@@ -20,7 +20,7 @@ export const CardStyled = ({ title, value, icon, iconColor }) => {
           {title || 'Titulo'}
         </Typography>
         <Typography variant="h4" component="div">
-          {value || '0000'}
+          {String(value).padStart(4, '0') || '0000'}
         </Typography>
       </Box>
       <Box sx={{ marginLeft: 2 }}>
